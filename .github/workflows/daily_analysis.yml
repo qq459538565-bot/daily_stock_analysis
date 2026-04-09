@@ -31,9 +31,6 @@ concurrency:
 jobs:
   analyze:
     runs-on: ubuntu-latest
-    jobs:
-  analyze:
-    runs-on: ubuntu-latest
     timeout-minutes: 28  # ← 新增这行
     # 添加超时限制，防止任务卡死
     timeout-minutes: 30
