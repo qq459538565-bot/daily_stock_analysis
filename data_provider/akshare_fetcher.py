@@ -291,6 +291,16 @@ class AkshareFetcher(BaseFetcher):
         """
         try:
             import akshare as ak
+            # 港股行情全局缓存，同一进程内只拉取一次
+import time as _time
+_HK_SPOT_CACHE = {"data": None, "ts": 0}
+
+def _get_hk_spot_em_cached():
+    now = _time.time()
+    if _HK_SPOT_CACHE["data"] is None or now - _HK_SPOT_CACHE["ts"] > 300:
+        _HK_SPOT_CACHE["data"] = _get_hk_spot_em_cached()
+        _HK_SPOT_CACHE["ts"] = now
+    return _HK_SPOT_CACHE["data"]
             # akshare 内部使用 requests，我们通过环境变量或直接设置来影响
             # 实际上 akshare 可能不直接暴露 session，这里通过 fake_useragent 作为补充
             random_ua = random.choice(USER_AGENTS)
@@ -1328,7 +1338,7 @@ class AkshareFetcher(BaseFetcher):
         """
         获取港股实时行情数据
 
-        主数据源：ak.stock_hk_spot_em()（东方财富）
+        主数据源：_get_hk_spot_em_cached()（东方财富）
         备用数据源：ak.stock_hk_spot()（新浪）
         包含：最新价、涨跌幅、成交量、成交额等
 
@@ -1358,11 +1368,11 @@ class AkshareFetcher(BaseFetcher):
         # --- 主数据源：东方财富 ---
         if circuit_breaker.is_available(em_key):
             try:
-                logger.info(f"[API调用] ak.stock_hk_spot_em() 获取港股实时行情...")
+                logger.info(f"[API调用] _get_hk_spot_em_cached() 获取港股实时行情...")
                 import time as _time
                 api_start = _time.time()
 
-                df = ak.stock_hk_spot_em()
+                df = _get_hk_spot_em_cached()
 
                 api_elapsed = _time.time() - api_start
                 logger.info(f"[API返回] ak.stock_hk_spot_em 成功: 返回 {len(df)} 只港股, 耗时 {api_elapsed:.2f}s")
